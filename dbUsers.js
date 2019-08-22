@@ -13,10 +13,12 @@ class DbUser {
         });
     }
 
-    find(query, cb){
-        this._db.find(query, (err, docs) => {
-            if(err) cb(err);
-            cb(docs);
+    find(query){
+        return new Promise((resolve, reject) => {
+            this._db.find(query, (err, docs) => {
+                if(err) reject(err);
+                resolve(docs);
+            });
         });
     }
 

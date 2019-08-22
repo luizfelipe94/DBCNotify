@@ -1,3 +1,6 @@
+const CronJob = require('cron').CronJob;
+const moment = require('moment');
+
 const DbcApi = require('./dbcApi');
 const DbUser = require('./dbUsers');
 const Mailer = require('./Mailer');
@@ -8,27 +11,35 @@ const db = new DbUser();
 const dbc = new DbcApi();
 const mail = new Mailer();
 
-function main(){
+async function main(){
 
-    dbc.checkBalance()
-    .then(res => {
-        console.log(res);
-    });
-
-    // const msgDef = `Olá, [name]. Saldo atual do Death By Captcha: ${123}`;
-
-    // db.find({}, users => {
-    //     if(users.length > 0){
-    //         const usersMail = users.filter(el => el.sendMail == true);
-    //         console.log(`${usersMail.length} usuários para enviar email.`);
-    //         for (let i = 0; i < usersMail.length; i++) {
-    //             msg = msgDef.replace("[name]", usersMail[i].name);
-    //             mail.sendMail(usersMail[i].email, "Saldo DBC", msg);
-    //             console.log(`Mensagem enviada para o usuário ${usersMail[i].name}`);
-    //         }
+    // dbc.checkBalance()
+    // .then(async res => {
+    //     const users = await db.find({ sendMail: true });
+    //     for (let i = 0; i < users.length; i++) {
+    //         Promise.resolve(mail.sendMail(users[i].email, "Saldo DBC", formatMsg(users[i].name, 123)))            
     //     }
     // });
-    // mail.sendMail("lfsilva@grupoprazo.adv.br", "teste", "texto teste");
+
+    const users = await db.find({ sendMail: true });
+    console.log(`${users.length} usuários para enviar email.`);
+    for (let i = 0; i < users.length; i++) {
+        Promise.resolve(mail.sendMail(users[i].email, "Saldo DBC", formatMsg(users[i].name, 123)));
+        console.log(`Email enviado para o usuario ${users[i].name}`);       
+    }
+
 }
 
-main();
+const formatMsg = (userName, balance) => {
+    let msg = `Olá, [name]. Saldo atual do Death By Captcha: ${balance}`;
+    msg = msg.replace("[name]", userName);
+    return msg;
+}
+
+// 1 vez por dia as 11h
+const job = new CronJob('0 11 * * *', async () => {
+    main();
+    console.log(`\nPróxima execução as ${moment(job.nextDate()).format('HH:mm:ss')}\n`);
+}, null, true, 'America/Sao_Paulo');
+
+console.log(`\nPróxima execução as ${moment(job.nextDate()).format('HH:mm:ss')}\n`);
